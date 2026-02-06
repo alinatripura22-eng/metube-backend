@@ -86,9 +86,28 @@ db.once("open", async () => {
 
   app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-  app.use(express.static(path.join(__dirname, "public")));
-  app.get("/*", (req, res) => {
-    res.status(200).sendFile(path.join(__dirname, "public", "index.html"));
+
+  // Root endpoint - Return JSON instead of HTML
+  app.get("/", (req, res) => {
+    res.json({
+      success: true,
+      message: "Vibbeo Backend API is running!",
+      version: "1.0.0",
+      status: "online",
+      database: "connected",
+      endpoints: { health: "/health", api: "/api" }
+    });
+  });
+  
+  // Health check
+  app.get("/health", (req, res) => {
+    res.json({ status: "healthy", timestamp: new Date().toISOString() });
+  });
+  
+  // 404 handler
+  app.use((req, res) => {
+    res.status(404).json({ success: false, message: "Not found", path: req.path });
+  });
   });
 
   const PORT = process.env.PORT;
