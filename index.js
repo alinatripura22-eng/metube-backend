@@ -78,16 +78,11 @@ db.once("open", async () => {
   } catch (e) {
     console.error("initializeSettings failed on startup:", e);
   }
+  }
 
   require("./socket");
 
-  const routes = require("./routes/index");
-  app.use(routes);
-
-  app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-
-  // Root endpoint - Return JSON instead of HTML
+  // Root endpoint - MUST BE BEFORE routes
   app.get("/", (req, res) => {
     res.json({
       success: true,
@@ -95,40 +90,40 @@ db.once("open", async () => {
       version: "1.0.0",
       status: "online",
       database: "connected",
-      endpoints: { health: "/health", api: "/api" }
+      endpoints: { 
+        health: "/health", 
+        admin: "/admin",
+        client: "/client"
+      }
     });
   });
   
   // Health check
   app.get("/health", (req, res) => {
-    res.json({ status: "healthy", timestamp: new Date().toISOString() });
+    res.json({ 
+      status: "healthy", 
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    });
   });
+
+  const routes = require("./routes/index");
+  app.use(routes);
+
+  app.use("/uploads", express.static(path.join(__dirname, "uploads")));
   
-  // 404 handler
+  // 404 handler - MUST BE LAST
   app.use((req, res) => {
-    res.status(404).json({ success: false, message: "Not found", path: req.path });
-  });
+    res.status(404).json({ 
+      success: false, 
+      message: "Endpoint not found", 
+      path: req.path 
+    });
   });
 
   const PORT = process.env.PORT;
   server.listen(PORT, () => {
     console.log("Hello World ! listening on " + PORT);
-  });
-});
-
-//import model
-const Video = require("./models/video.model");
-const User = require("./models/user.model");
-const UserWiseSubscription = require("./models/userWiseSubscription.model");
-
-//Schedule a task to run every 10 minutes for update scheduleType from 1 to 2
-cron.schedule("*/10 * * * *", async () => {
-  console.log("this function will run every 10 minutes...");
-
-  const currentTime = moment().toISOString(); //get the current date and time
-  console.log("currentTime: ", currentTime);
-
-  await Video.updateMany(
     {
       scheduleType: 1,
       scheduleTime: { $lt: currentTime }, //less than today's date and time
