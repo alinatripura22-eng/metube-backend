@@ -3,6 +3,7 @@ const multer = require("multer");
 const multerS3 = require("multer-s3");
 const fs = require("fs");
 const path = require("path");
+const https = require("https");
 
 const createS3Instance = (hostname, accessKeyId, secretAccessKey) => {
   return new aws.S3({
@@ -21,6 +22,66 @@ const localStoragePath = path.join(__dirname, "..", "uploads");
 
 if (!fs.existsSync(localStoragePath)) {
   fs.mkdirSync(localStoragePath, { recursive: true });
+}
+
+// BunnyCDN custom multer storage engine
+class BunnyCDNStorage {
+  constructor(opts) {
+    this.storageZone = opts.storageZone;
+    this.storagePassword = opts.storagePassword;
+    this.storageHostname = opts.storageHostname || "storage.bunnycdn.com";
+  }
+
+  _handleFile(req, file, cb) {
+    const folder = req.body.folderStructure || "";
+    const filePath = folder ? `${this.storageZone}/${folder}/${file.originalname}` : `${this.storageZone}/${file.originalname}`;
+
+    const chunks = [];
+    file.stream.on("data", (chunk) => chunks.push(chunk));
+    file.stream.on("end", () => {
+      const buffer = Buffer.concat(chunks);
+
+      const options = {
+        hostname: this.storageHostname,
+        port: 443,
+        path: `/${filePath}`,
+        method: "PUT",
+        headers: {
+          AccessKey: this.storagePassword,
+          "Content-Type": "application/octet-stream",
+          "Content-Length": buffer.length,
+        },
+      };
+
+      const uploadReq = https.request(options, (res) => {
+        let body = "";
+        res.on("data", (chunk) => (body += chunk));
+        res.on("end", () => {
+          if (res.statusCode === 201 || res.statusCode === 200) {
+            cb(null, {
+              path: filePath,
+              size: buffer.length,
+            });
+          } else {
+            cb(new Error(`BunnyCDN upload failed: ${res.statusCode} - ${body}`));
+          }
+        });
+      });
+
+      uploadReq.on("error", (err) => {
+        cb(new Error(`BunnyCDN upload error: ${err.message}`));
+      });
+
+      uploadReq.write(buffer);
+      uploadReq.end();
+    });
+
+    file.stream.on("error", (err) => cb(err));
+  }
+
+  _removeFile(req, file, cb) {
+    cb(null);
+  }
 }
 
 const storageOptions = {
@@ -53,6 +114,12 @@ const storageOptions = {
       cb(null, `${folder}/${file.originalname}`);
     },
   }),
+
+  bunnycdn: new BunnyCDNStorage({
+    storageZone: settingJSON.bunnyStorageZone,
+    storagePassword: settingJSON.bunnyStoragePassword,
+    storageHostname: settingJSON.bunnyStorageHostname || "storage.bunnycdn.com",
+  }),
 };
 
 const getActiveStorage = async () => {
@@ -60,6 +127,7 @@ const getActiveStorage = async () => {
   if (settings.storage.local) return "local";
   if (settings.storage.awsS3) return "aws";
   if (settings.storage.digitalOcean) return "digitalocean";
+  if (settings.storage.bunnycdn) return "bunnycdn";
   return "local"; // Fallback to local storage if no storage is active
 };
 

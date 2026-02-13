@@ -89,6 +89,12 @@ exports.update = async (req, res) => {
     setting.awsBucketName = req.body.awsBucketName ? req.body.awsBucketName : setting.awsBucketName;
     setting.awsRegion = req.body.awsRegion ? req.body.awsRegion : setting.awsRegion;
 
+    setting.bunnyApiKey = req.body.bunnyApiKey ? req.body.bunnyApiKey : setting.bunnyApiKey;
+    setting.bunnyStorageZone = req.body.bunnyStorageZone ? req.body.bunnyStorageZone : setting.bunnyStorageZone;
+    setting.bunnyStoragePassword = req.body.bunnyStoragePassword ? req.body.bunnyStoragePassword : setting.bunnyStoragePassword;
+    setting.bunnyPullZoneUrl = req.body.bunnyPullZoneUrl ? req.body.bunnyPullZoneUrl : setting.bunnyPullZoneUrl;
+    setting.bunnyStorageHostname = req.body.bunnyStorageHostname ? req.body.bunnyStorageHostname : setting.bunnyStorageHostname;
+
     await setting.save();
 
     updateSettingFile(setting);
@@ -235,24 +241,34 @@ exports.switchStorageOption = async (req, res) => {
       if (updatedStorage.local) {
         updatedStorage.awsS3 = false;
         updatedStorage.digitalOcean = false;
+        updatedStorage.bunnycdn = false;
       }
     } else if (type === "awsS3") {
       updatedStorage.awsS3 = !updatedStorage.awsS3;
       if (updatedStorage.awsS3) {
         updatedStorage.local = false;
         updatedStorage.digitalOcean = false;
+        updatedStorage.bunnycdn = false;
       }
     } else if (type === "digitalOcean") {
       updatedStorage.digitalOcean = !updatedStorage.digitalOcean;
       if (updatedStorage.digitalOcean) {
         updatedStorage.local = false;
         updatedStorage.awsS3 = false;
+        updatedStorage.bunnycdn = false;
+      }
+    } else if (type === "bunnycdn") {
+      updatedStorage.bunnycdn = !updatedStorage.bunnycdn;
+      if (updatedStorage.bunnycdn) {
+        updatedStorage.local = false;
+        updatedStorage.awsS3 = false;
+        updatedStorage.digitalOcean = false;
       }
     } else {
       return res.status(200).json({ status: false, message: "Invalid storage type provided." });
     }
 
-    const oneTrue = updatedStorage.local || updatedStorage.awsS3 || updatedStorage.digitalOcean;
+    const oneTrue = updatedStorage.local || updatedStorage.awsS3 || updatedStorage.digitalOcean || updatedStorage.bunnycdn;
     if (!oneTrue) {
       return res.status(200).json({ status: false, message: "At least one storage option must remain enabled." });
     }

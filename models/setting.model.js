@@ -48,7 +48,15 @@ const settingSchema = new mongoose.Schema(
       local: { type: Boolean, default: true }, // Local storage active by default
       awsS3: { type: Boolean, default: false },
       digitalOcean: { type: Boolean, default: false },
+      bunnycdn: { type: Boolean, default: false },
     },
+
+    //BunnyCDN
+    bunnyApiKey: { type: String, default: "" },
+    bunnyStorageZone: { type: String, default: "" },
+    bunnyStoragePassword: { type: String, default: "" },
+    bunnyPullZoneUrl: { type: String, default: "" },
+    bunnyStorageHostname: { type: String, default: "storage.bunnycdn.com" },
 
     //DigitalOcean Spaces
     doEndpoint: { type: String, default: "" },

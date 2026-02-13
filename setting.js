@@ -46,10 +46,16 @@ module.exports = {
   "watermarkIcon": "",
   "watermarkType": 2,
   "storage": {
-    "local": true,
+    "local": false,
     "awsS3": false,
-    "digitalOcean": false
+    "digitalOcean": false,
+    "bunnycdn": true
   },
+  "bunnyApiKey": "",
+  "bunnyStorageZone": "vibbeo-storage",
+  "bunnyStoragePassword": "",
+  "bunnyPullZoneUrl": "https://vibbeo-videos.b-cdn.net",
+  "bunnyStorageHostname": "storage.bunnycdn.com",
   "resendApiKey": "",
   "awsAccessKey": "",
   "awsBucketName": "",

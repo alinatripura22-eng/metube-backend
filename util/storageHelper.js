@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const https = require("https");
 const { S3, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 
 const deleteFromAwsS3 = async (fileUrl) => {
@@ -85,6 +86,51 @@ const deleteFromS3 = async (fileUrl) => {
   }
 };
 
+const deleteFromBunnyCDN = async (fileUrl) => {
+  try {
+    const parsedUrl = new URL(fileUrl);
+    const filePath = decodeURIComponent(parsedUrl.pathname.substring(1)); // remove leading /
+    const storageZone = settingJSON?.bunnyStorageZone;
+    const storagePassword = settingJSON?.bunnyStoragePassword;
+    const storageHostname = settingJSON?.bunnyStorageHostname || "storage.bunnycdn.com";
+
+    const deletePath = `/${storageZone}/${filePath}`;
+
+    const options = {
+      hostname: storageHostname,
+      port: 443,
+      path: deletePath,
+      method: "DELETE",
+      headers: {
+        AccessKey: storagePassword,
+      },
+    };
+
+    return new Promise((resolve, reject) => {
+      const req = https.request(options, (res) => {
+        let body = "";
+        res.on("data", (chunk) => (body += chunk));
+        res.on("end", () => {
+          if (res.statusCode === 200 || res.statusCode === 404) {
+            console.log("✅ Deleted from BunnyCDN:", deletePath);
+            resolve();
+          } else {
+            console.error("❌ BunnyCDN delete failed:", res.statusCode, body);
+            resolve(); // Don't throw - file may already be deleted
+          }
+        });
+      });
+      req.on("error", (err) => {
+        console.error("❌ BunnyCDN delete error:", err.message);
+        resolve(); // Don't throw
+      });
+      req.end();
+    });
+  } catch (err) {
+    console.error("❌ BunnyCDN delete error:", err.message);
+  }
+};
+
 const deleteFromStorage = async (fileUrl) => {
   try {
     if (!fileUrl) return;
@@ -108,6 +154,8 @@ const deleteFromStorage = async (fileUrl) => {
       await deleteFromS3(fileUrl, "digitalocean");
     } else if (host.includes("amazonaws.com")) {
       await deleteFromAwsS3(fileUrl, "aws");
+    } else if (host.includes("b-cdn.net") || host.includes("bunnycdn.com")) {
+      await deleteFromBunnyCDN(fileUrl);
     } else {
       console.warn("Unknown storage. Skipping deletion.");
     }

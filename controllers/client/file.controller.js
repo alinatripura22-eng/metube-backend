@@ -4,6 +4,7 @@ const getActiveStorage = async () => {
   if (settings.storage.local) return "local";
   if (settings.storage.awsS3) return "aws";
   if (settings.storage.digitalOcean) return "digitalocean";
+  if (settings.storage.bunnycdn) return "bunnycdn";
 
   return "local"; // Fallback to local storage if no active storage is found
 };
@@ -28,6 +29,9 @@ exports.uploadContent = async (req, res) => {
       url = `${settingJSON?.doEndpoint}/${req.body.folderStructure}/${req.file.originalname}`;
     } else if (activeStorage === "aws") {
       url = `${settingJSON.awsEndpoint}/${req.body.folderStructure}/${req.file.originalname}`;
+    } else if (activeStorage === "bunnycdn") {
+      const pullZone = settingJSON?.bunnyPullZoneUrl?.replace(/\/$/, "");
+      url = `${pullZone}/${req.body.folderStructure}/${req.file.originalname}`;
     }
 
     return res.status(200).json({
