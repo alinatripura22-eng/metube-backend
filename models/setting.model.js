@@ -28,6 +28,7 @@ const settingSchema = new mongoose.Schema(
     adminCommissionOfPaidChannel: { type: Number, default: 0 }, //that value always in percentage
     adminCommissionOfPaidVideo: { type: Number, default: 0 }, //that value always in percentage
     durationOfShorts: { type: Number, default: 0 }, //that value always save in millisecond
+    maxVideoDuration: { type: Number, default: 600000 }, //max video duration in milliseconds (600000 = 10 minutes)
 
     minCoinForCashOut: { type: Number, default: 0 }, //min coin requried for convert coin to default currency i.e., 1000 coin = 1 $
     maxAdPerDay: { type: Number, default: 1 },

@@ -82,6 +82,19 @@ exports.uploadVideo = async (req, res) => {
       }
     }
 
+    // Enforce max video duration (10 minutes = 600000ms) for all video types
+    const maxVideoDuration = global.settingJSON.maxVideoDuration || 600000;
+    if (maxVideoDuration > 0 && parseInt(req.body.videoTime) > maxVideoDuration) {
+      if (req.body.videoImage) {
+        await deleteFromStorage(req.body.videoImage);
+      }
+      if (req.body.videoUrl) {
+        await deleteFromStorage(req.body.videoUrl);
+      }
+      const maxMinutes = Math.floor(maxVideoDuration / 60000);
+      return res.status(200).json({ status: false, message: `Video duration exceeds the maximum limit of ${maxMinutes} minutes. Please upload a shorter video.` });
+    }
+
     const [uniqueVideoId, user] = await Promise.all([generateUniqueVideoId(), User.findOne({ _id: req.body.userId, isActive: true, isAddByAdmin: true })]);
 
     if (!user) {

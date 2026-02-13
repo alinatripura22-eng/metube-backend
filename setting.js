@@ -11,6 +11,7 @@ module.exports = {
   "adminCommissionOfPaidChannel": 0,
   "adminCommissionOfPaidVideo": 0,
   "durationOfShorts": 60000,
+  "maxVideoDuration": 600000,
   "createdAt": "2023-08-08T12:48:46.902Z",
   "updatedAt": "2025-06-17T12:25:23.113Z",
   "minWithdrawalRequestedAmount": 10,
